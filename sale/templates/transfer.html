@@ -1,0 +1,115 @@
+{% extends 'index.html' %}{% load static %}
+{% block style %}
+    <style>
+    td{
+        line-height:36px !important;
+        height:36px;
+        vertical-align: middle !important;
+        font-size:16px;
+        padding-right:5px;
+    }
+    </style>
+{% endblock style %}
+{% block content %}
+<div class="row">
+    <div class="col-md-3 col-md-offset-3">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <h2>单据</h2>
+            </div>
+            {{ form.as_p }}
+            <div class="form-group text-right">
+                <button type="submit" class="btn btn-info">提交</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-3 text-right">
+        <h2 style="margin-bottom:40px">商品信息</h2>
+        <table class="table table-bordered" style="width:90%;float:right;">
+            <tr>
+                <td width="28%" align="left">商品名称</td>
+                <td id="name" align="right"></td>
+            </tr>
+            <tr>
+                <td width="28%" align="left">商品规格</td>
+                <td id="mod"></td>
+            </tr>
+            <tr>
+                <td width="28%" align="left">生产日期</td>
+                <td id="product"></td>
+            </tr>
+            <tr>
+                <td width="28%" align="left">有效日期</td>
+                <td id="validity"></td>
+            </tr>
+            <tr>
+                <td width="28%" align="left">商品单价</td>
+                <td id="price"></td>
+            </tr>
+            <tr>
+                <td width="28%" align="left">合计金额</td>
+                <td id='sum'></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock content %}
+{% block script %}
+    <script>
+    $(document).ready(function(){
+        $('form').attr('action', window.location.pathname);
+        $('form p *:nth-child(2)').addClass('form-control');
+    });
+    $('#{{ form.transfer_patch.id_for_label }}').on('blur change', function() {
+        if ($(this).val() == 'new') {
+            $('#mymodal').modal({remote: '/patch/' + $('#{{ form.transfer_code.id_for_label }}').val()});
+        };
+        getPatch($('#{{ form.transfer_code.id_for_label }}').val(), $(this).val());
+    });
+    function getCode(code){
+        $.ajax({
+            url: window.location.pathname + $(code).val(),
+            type: 'get',
+            data: {
+                code: $(code).val(),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(res){
+                $('#{{ form.transfer_patch.id_for_label }}').empty();
+                $.each(res, function(row, value){
+                    $('#{{ form.transfer_patch.id_for_label }}').append($('<option/>', {value:value.stock_patch__patch_code, text: value.stock_patch__patch_code}));
+                });
+                $('#{{ form.transfer_patch.id_for_label }}').append($('<option/>', {value:'new', text:'新批号'}));
+                getPatch($(code).val(), $('#{{ form.transfer_patch.id_for_label }}').val());
+            }
+        })
+    }
+    function getPatch(code, patch){
+        $.ajax({
+            url:window.location.pathname+code+'/'+patch,
+            type: 'get',
+            data: {
+                code: code,
+                patch: patch,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(res){
+                $.each(res, function(row, value){
+                    $('#name').html(value.stock_code__commdity_name);
+                    $('#mod').html(value.stock_code__commdity_mod__mod_name);
+                    $('#price').html(value.stock_code__commdity_price);
+                    $('#product').html(value.stock_patch__patch_product);
+                    $('#validity').html(value.stock_patch__patch_validity);
+                })
+            }
+        })
+    };
+    </script>
+<div class="modal fade" id="mymodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+    </div>
+  </div>
+</div>
+{% endblock %}
